@@ -5,6 +5,7 @@ import SplashScreen from '@features/auth/SplashScreen'; // Ensure correct path
 import {navigate, navigationRef} from '@utils/NavigationUtils';
 import DeliveryLogin from '@features/auth/DeliveryLogin';
 import CustomerLogin from '@features/auth/CustomerLogin';
+import ProductDashboard from '@features/dashboard/ProductDashboard';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ const Navigation: FC = () => {
           headerShown: false, // Hide the header across all screens
         }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
+        <Stack.Screen name="ProductDashboard" component={ProductDashboard} />
         <Stack.Screen
           options={{
             animation: 'fade',
