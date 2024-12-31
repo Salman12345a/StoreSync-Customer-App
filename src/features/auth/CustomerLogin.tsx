@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Keyboard,
   Alert,
+  Dimensions,
 } from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -22,10 +23,15 @@ import CustomInput from '@components/ui/Custominput';
 import CustomButton from '@components/ui/CustomButton';
 import useKeyboardOffsetHeight from '@utils/useKeyboardOffsetHeight';
 import LinearGradient from 'react-native-linear-gradient';
-import {RFValue} from 'react-native-responsive-fontsize';
 import {customerLogin} from '@service/authService';
 
 const bottomColors = [...lightColors].reverse();
+
+const {width} = Dimensions.get('window');
+const responsiveFontSize = (fontSize: number): number => {
+  const baseWidth = 375; // Reference width (e.g., iPhone X)
+  return Math.round((fontSize * width) / baseWidth);
+};
 
 const CustomerLogin: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -147,7 +153,7 @@ const CustomerLogin: React.FC = () => {
 
         <View style={styles.footer}>
           <SafeAreaView>
-            <CustomText fontSize={RFValue(6)}>
+            <CustomText fontSize={responsiveFontSize(6)}>
               By Continuing, you agree to our Terms of Service & Privacy Policy{' '}
             </CustomText>
           </SafeAreaView>

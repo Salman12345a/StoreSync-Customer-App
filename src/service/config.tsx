@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://localhost:3000/api';
+export const BASE_URL = 'http://10.0.2.2:3000/api';
 export const SOCKET_URL = 'http://localhost:3000/api';
 
 // USE YOUR NETWORK IP OR HOSTED URL
