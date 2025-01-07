@@ -1,7 +1,6 @@
-import {Fonts} from '@utils/Constants';
+import {Fonts, Colors} from '@utils/Constants';
 import {TextStyle, Text, StyleSheet} from 'react-native';
 import {RFValue} from 'react-native-responsive-fontsize';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 interface Props {
   varient?:

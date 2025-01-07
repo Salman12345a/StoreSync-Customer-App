@@ -3,7 +3,7 @@ import React, {FC} from 'react';
 import {NoticeHeight} from '@utils/Scaling';
 import Notice from '@components/dashboard/Notice';
 
-const NOTICE_HEIGHT = -(NoticeHeight + 12);
+const NOTICE_HEIGHT = -(NoticeHeight + 12); // Negative value to start above the screen
 
 const NoticeAnimation: FC<{
   noticePosition: any;
@@ -25,8 +25,8 @@ const NoticeAnimation: FC<{
             transform: [
               {
                 translateY: noticePosition.interpolate({
-                  inputRange: [NOTICE_HEIGHT, 0],
-                  outputRange: [NoticeHeight + 20, 0], // Adjusted to reverse the motion
+                  inputRange: [NOTICE_HEIGHT, 38],
+                  outputRange: [0, NoticeHeight + -30], // Start high and then bring it down to its final position
                 }),
               },
             ],
