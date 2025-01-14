@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, FC} from 'react';
+import React, {useRef, useEffect, useState, useCallback, FC} from 'react';
 import {
   View,
   Animated,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-
 import NoticeAnimation from './NoticeAnimation';
 import {NoticeHeight, screenHeight} from '@utils/Scaling';
 import Visuals from './Visuals';
@@ -26,117 +25,157 @@ import {Fonts} from '@utils/Constants';
 import CustomTextLeft from '@components/ui/CustomTextLeft';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '@components/ui/CustomText';
-import {useAnimatedStyle, withTiming} from 'react-native-reanimated';
+import {useAnimatedStyle, withTiming, Easing} from 'react-native-reanimated';
+import withCart from '@features/cart/WithCart';
+import withLiveStatus from '@features/map/withLiveStatus';
 
 const NOTICE_HEIGHT = -(NoticeHeight + 12);
 
 const ProductDashboard: FC = () => {
   const {scrollY, expand} = useCollapsibleContext();
   const previousScroll = useRef<number>(0);
-
-  const backToTopStyle = useAnimatedStyle(() => {
-    const isScrollingUp =
-      scrollY.value < previousScroll.current && scrollY.value > 180;
-    const opacity = withTiming(isScrollingUp ? 1 : 0, {duration: 300});
-    const translateY = withTiming(isScrollingUp ? 0 : 10, {duration: 300});
-
-    previousScroll.current = scrollY.value;
-
-    return {
-      opacity,
-      transform: [{translateY}],
-    };
-  });
-  // Animated value reference for notice position
+  const [scrollPosition, setScrollPosition] = useState(0);
   const noticePosition = useRef(new Animated.Value(NOTICE_HEIGHT)).current;
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isBackToTopDisabled, setIsBackToTopDisabled] = useState(true); // Initially disabled
+  const [isScrollDown, setIsScrollDown] = useState(false); // State for scroll direction
 
-  // Slide up animation
-  const slideUp = () => {
+  const handleScroll = useCallback(
+    (event: any) => {
+      const currentScroll = event.nativeEvent.contentOffset.y;
+      setScrollPosition(currentScroll);
+
+      // Update scroll direction
+      const scrollingDown = currentScroll > 100;
+      setIsScrollDown(scrollingDown);
+
+      // Disable the Back to Top button when the user scrolls manually to the top
+      if (currentScroll <= 0) {
+        setShowBackToTop(false);
+        setIsBackToTopDisabled(true);
+      } else {
+        setIsBackToTopDisabled(false); // Enable button when scrolling down
+      }
+
+      // Show/hide button based on position and scroll direction
+      if (
+        scrollingDown &&
+        currentScroll < previousScroll.current &&
+        currentScroll <= 100
+      ) {
+        setShowBackToTop(false);
+      } else if (scrollingDown && currentScroll > previousScroll.current) {
+        if (!isBackToTopDisabled) {
+          setShowBackToTop(true);
+        }
+      } else if (currentScroll <= 150) {
+        setShowBackToTop(false);
+      }
+
+      previousScroll.current = currentScroll;
+    },
+    [isBackToTopDisabled],
+  );
+
+  const backToTopStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(showBackToTop && !isBackToTopDisabled ? 1 : 0, {
+      duration: 300,
+    }),
+    transform: [
+      {
+        translateY: withTiming(showBackToTop && !isBackToTopDisabled ? 0 : 10, {
+          duration: 300,
+        }),
+      },
+    ],
+  }));
+
+  const animateNotice = (toValue: number, duration: number) =>
     Animated.timing(noticePosition, {
-      toValue: NOTICE_HEIGHT,
-      duration: 1200,
-      useNativeDriver: true, // Use native driver for better performance
+      toValue,
+      duration,
+      useNativeDriver: true,
     }).start();
-  };
 
-  // Slide down animation
-  const slideDown = () => {
-    Animated.timing(noticePosition, {
-      toValue: 0,
-      duration: 1200,
-      useNativeDriver: true, // Use native driver for better performance
-    }).start();
-  };
+  const slideDown = () => animateNotice(0, 1200);
+  const slideUp = () => animateNotice(NOTICE_HEIGHT, 1200);
 
-  // UseEffect to trigger slide animations
   useEffect(() => {
-    slideDown(); // Trigger slide down initially
-    const timeoutId = setTimeout(() => {
-      slideUp(); // Trigger slide up after 3500ms
-    }, 3500);
-
-    // Cleanup timeout on component unmount
+    slideDown();
+    const timeoutId = setTimeout(slideUp, 3500);
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // Render
+  const handleShowNotice = useCallback(() => {
+    slideDown();
+    const timeoutId = setTimeout(slideUp, 3500);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  const handleBackToTopClick = () => {
+    // Smooth and slower animation to scroll to top
+    scrollY.value = withTiming(0, {
+      duration: 1000, // Increased duration for a slower scroll
+      easing: Easing.out(Easing.cubic), // Smoother easing for a professional feel
+    });
+
+    expand(); // Expand header if required
+
+    // Update states after the animation
+    setIsBackToTopDisabled(true);
+    setShowBackToTop(false);
+  };
+
   return (
     <NoticeAnimation noticePosition={noticePosition}>
       <>
         <Visuals />
         <SafeAreaView />
 
-        <Animated.View style={[styles.backToTopButton, backToTopStyle]}>
-          <TouchableOpacity
-            onPress={() => {
-              scrollY.value = 0;
-              expand;
-            }}
-            style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-            <Icon
-              name="arrow-up-circle-outline"
-              color="white"
-              size={RFValue(12)}
-            />
-            <CustomText
-              varient="h9"
-              style={{color: 'white'}}
-              fontFamily={Fonts.SemiBold}>
-              Back to top
-            </CustomText>
-          </TouchableOpacity>
-        </Animated.View>
+        {/* Back to Top Button */}
+        {showBackToTop && !isBackToTopDisabled && (
+          <Animated.View style={[styles.backToTopButton, backToTopStyle]}>
+            <TouchableOpacity
+              onPress={handleBackToTopClick}
+              style={styles.backToTopContent}>
+              <Icon
+                name="arrow-up-circle-outline"
+                color="white"
+                size={RFValue(12)}
+              />
+              <CustomText
+                variant="h9"
+                style={styles.backToTopText}
+                fontFamily={Fonts.SemiBold}>
+                Back to top
+              </CustomText>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
+        {/* Main Content */}
         <CollapsibleContainer style={styles.panelContainer}>
           <CollapsibleHeaderContainer containerStyle={styles.transparent}>
-            <AnimatedHeader
-              showNotice={() => {
-                slideDown();
-                const timeoutId = setTimeout(() => {
-                  slideUp();
-                }, 3500);
-
-                // Cleanup timeout after notice is shown
-                return () => clearTimeout(timeoutId);
-              }}
-            />
+            <AnimatedHeader showNotice={handleShowNotice} />
             <StickSearchBar />
           </CollapsibleHeaderContainer>
           <CollapsibleScrollView
             nestedScrollEnabled
             style={styles.panelContainer}
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            onScrollEndDrag={handleScroll}>
             <Content />
-            <View style={{backgroundColor: '#F8F8F8', padding: 20}}>
+            <View style={styles.footer}>
               <CustomTextLeft
                 fontSize={RFValue(32)}
                 fontFamily={Fonts.Bold}
-                style={{opacity: 0.2}}>
+                style={styles.footerText}>
                 Perfectly synced your local store's
               </CustomTextLeft>
               <CustomTextLeft
                 fontFamily={Fonts.Bold}
-                style={{marginTop: 10, paddingBottom: 100, opacity: 0.2}}>
+                style={styles.footerSubText}>
                 Developed By Quadserv
               </CustomTextLeft>
             </View>
@@ -160,13 +199,35 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? screenHeight * 0.18 : 100,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
     backgroundColor: 'black',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
     zIndex: 999,
+    marginTop: 4,
+  },
+  backToTopContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  backToTopText: {
+    color: 'white',
+  },
+  footer: {
+    backgroundColor: '#F8F8F8',
+    padding: 20,
+  },
+  footerText: {
+    opacity: 0.2,
+  },
+  footerSubText: {
+    marginTop: 10,
+    paddingBottom: 100,
+    opacity: 0.2,
   },
 });
 
-export default withCollapsibleContext(ProductDashboard);
+export default withLiveStatus(
+  withCart(withCollapsibleContext(ProductDashboard)),
+);
