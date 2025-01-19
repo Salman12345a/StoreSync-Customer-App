@@ -12,6 +12,7 @@ import ProductOrder from '@features/order/ProductOrder';
 import OrderSuccess from '@features/order/OrderSuccess';
 import LiveTracking from '@features/map/LiveTracking';
 import Profile from '@features/profile/Profile';
+import DeliveryMap from '@features/delivery/DeliveryMap';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ const Navigation: FC = () => {
           headerShown: false, // Hide the header across all screens
         }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
+        <Stack.Screen name="DeliveryMap" component={DeliveryMap} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="ProductDashboard" component={ProductDashboard} />
         <Stack.Screen name="ProductCategories" component={ProductCategories} />
